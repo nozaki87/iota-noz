@@ -52,7 +52,6 @@ class _Main {
 					xhr.responseType = 'blob';
 					xhr.onload = function(e) {
 						if (xhr.status == 200) {
-							console.log("get success");
 							var theta_img = xhr.response as Blob;
 							new Iota(curr_elem, null, theta_img);
 						}
