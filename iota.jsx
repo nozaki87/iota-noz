@@ -28,11 +28,13 @@ class _Main {
 			};
 			timer = Timer.setInterval((function () {
 				var parent = canvas.offsetParent as HTMLElement;
-				if ((canvas.width != parent.offsetWidth) ||
-				    (canvas.height != parent.offsetHeight)) {
-					canvas.width = parent.offsetWidth;
-					canvas.height = parent.offsetHeight;
-					iota.draw();
+				if (parent) {
+					if ((canvas.width != parent.offsetWidth) ||
+					    (canvas.height != parent.offsetHeight)) {
+						canvas.width = parent.offsetWidth;
+						canvas.height = parent.offsetHeight;
+						iota.draw();
+					}
 				}
 			}), 1000);
 		}

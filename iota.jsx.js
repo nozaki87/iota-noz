@@ -211,15 +211,16 @@ function _Main$main$AS(args) {
 		timer = Timer$setInterval$F$V$N((function () {
 			var parent;
 			parent = canvas.offsetParent;
-			if (canvas.width !== parent.offsetWidth || canvas.height !== parent.offsetHeight) {
-				canvas.width = parent.offsetWidth;
-				canvas.height = parent.offsetHeight;
-				iota.draw();
+			if (parent) {
+				if (canvas.width !== parent.offsetWidth || canvas.height !== parent.offsetHeight) {
+					canvas.width = parent.offsetWidth;
+					canvas.height = parent.offsetHeight;
+					iota.draw();
+				}
 			}
 		}), 1000);
 	}
 	all_canvas = dom.window.document.getElementsByTagName('canvas');
-	console.log(all_canvas.length);
 	for (i = 0; i < all_canvas.length; ++i) {
 		elem = all_canvas[i];
 		theta_url = elem.dataset.thetaImg;
