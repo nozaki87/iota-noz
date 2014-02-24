@@ -1,6 +1,6 @@
 import 'js/web.jsx';
 import 'console.jsx';
-import 'Timer.jsx';
+import 'timer.jsx';
 
 import 'mvq.jsx';
 
@@ -8,6 +8,7 @@ class _Main {
 	static function main(args:string[]) : void {
 		// IOTA用のcanvasがある場合
 		var canvas = dom.id('iota_canvas') as HTMLCanvasElement;
+		var timer;
 		if (canvas) {
 			canvas.style.position = 'absolute';
 			canvas.style.left = '0px';
@@ -20,18 +21,43 @@ class _Main {
 			canvas.height = dom.window.innerHeight;
 			// ブラウザのリサイズ対応
 			dom.window.onresize = function(ev:Event):void {
-				canvas.width = dom.window.innerWidth;
-				canvas.height = dom.window.innerHeight;
+				var parent = canvas.offsetParent as HTMLElement;
+				canvas.width = parent.offsetWidth;
+				canvas.height = parent.offsetHeight;
 				iota.draw(); // 再描画
 			};
+			timer = Timer.setInterval((function () {
+				var parent = canvas.offsetParent as HTMLElement;
+				if ((canvas.width != parent.offsetWidth) ||
+				    (canvas.height != parent.offsetHeight)) {
+					canvas.width = parent.offsetWidth;
+					canvas.height = parent.offsetHeight;
+					iota.draw();
+				}
+			}), 1000);
 		}
 		
 		// data-theta-img属性を持つcanvasがある場合
 		var all_canvas = dom.window.document.getElementsByTagName('canvas');
 		for (var i = 0; i < all_canvas.length; ++i) {
-			var elem = all_canvas[i] as HTMLElement;
+			var elem = all_canvas[i] as HTMLCanvasElement;
 			var theta_url = elem.dataset['thetaImg'];
 			if (theta_url) {
+				(function(canvas:HTMLCanvasElement, url:string):void{
+					var curr_elem = elem;
+					var xhr = new XMLHttpRequest();
+					xhr.open('GET', theta_url, true);
+					xhr.responseType = 'blob';
+					xhr.onload = function(e) {
+						if (xhr.status == 200) {
+							console.log("get success");
+							var theta_img = xhr.response as Blob;
+							new Iota(curr_elem, null, theta_img);
+						}
+					} ;
+					xhr.send();
+				})(elem as HTMLCanvasElement, theta_url);
+/*
 				(function(canvas:HTMLCanvasElement, url:string):void{
 					var img = dom.window.document.createElement('img') as HTMLImageElement;
 					img.onload = function(ev:Event):void {
@@ -39,6 +65,7 @@ class _Main {
 					};
 					img.src = url;
 				})(elem as HTMLCanvasElement, theta_url);
+*/
 			}
 		}
 	}
@@ -52,7 +79,7 @@ native final class FullScreenHandler {
 
 class Iota {
 	var draw = null:function():void;
-	function constructor(canvas:HTMLCanvasElement, input:HTMLInputElement, init_img:HTMLImageElement = null, fish_eye:boolean = false) {
+	function constructor(canvas:HTMLCanvasElement, input:HTMLInputElement, blob:Blob = null, init_img:HTMLImageElement = null, fish_eye:boolean = false) {
 		// 全球の分割数 横・縦
 		var hdiv = 128;
 		var vdiv = 64;
@@ -261,12 +288,15 @@ class Iota {
 		var file_index = -1;
 		
 		// files変数のうちn番目のファイルをテクスチャにセットする
-		function setFile(n:int) : void {
-			if (!files) return;
-			if (n < 0 || n >= files.length) return;
+		function setFile(n:int, blob:Blob) : void {
+			if (blob) {
+				var file = blob;
+			} else {
+				if (!files) return;
+				if (n < 0 || n >= files.length) return;
 			
-			var file = files[n];
-			
+				var file = files[n];
+			}
 			// テクスチャ用のファイル読み取り
 			var file_reader = new FileReader;
 			file_reader.onload = function(e:Event):void {
@@ -320,7 +350,7 @@ class Iota {
 		if (input) {
 			input.onchange = function(e:Event):void {
 				files = input.files;
-				setFile(file_index = 0);
+				setFile(file_index = 0, null);
 			};
 		}
 		
@@ -333,7 +363,7 @@ class Iota {
 			
 			var de = e as __noconvert__ DragEvent; // CAUTION: Chrome creates MouseEvent
 			files = de.dataTransfer.files;
-			setFile(file_index = 0);
+			setFile(file_index = 0, null);
 		};
 		
 		
@@ -454,10 +484,10 @@ class Iota {
 					console.log('unknown key code: ', kev.keyCode);
 					break;
 				case 37: // ←
-					if (files && --file_index >= 0) setFile(file_index); else file_index = 0;
+					if (files && --file_index >= 0) setFile(file_index, null); else file_index = 0;
 					break;
 				case 39: // →
-					if (files && ++file_index < files.length) setFile(file_index); else file_index = files.length - 1;
+					if (files && ++file_index < files.length) setFile(file_index, null); else file_index = files.length - 1;
 					break;
 				case 70: // F
 					fish_eye = !fish_eye;
@@ -465,5 +495,8 @@ class Iota {
 					break;
 			}
 		});
+		if (blob) {
+			setFile(file_index = 0, blob);
+		}
 	}
 }
